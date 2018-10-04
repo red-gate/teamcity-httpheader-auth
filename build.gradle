@@ -1,0 +1,60 @@
+buildscript {
+    repositories {
+        maven { url "https://plugins.gradle.org/m2/" }
+        jcenter()
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'pl.allegro.tech.build:axion-release-plugin:1.4.1'
+        classpath 'com.github.rodm:gradle-teamcity-plugin:1.0'
+    }
+}
+
+apply plugin: 'java'
+apply plugin: 'com.github.rodm.teamcity-server'
+apply plugin: 'pl.allegro.tech.build.axion-release'
+
+scmVersion {
+    tag {
+        prefix = project.name
+    }
+    versionCreator 'versionWithBranch'
+    localOnly = true
+}
+
+version = scmVersion.version
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+ext {
+    teamcityVersion = '2017.1'
+    teamcityDir = "$rootDir/servers/TeamCity-${teamcityVersion}"
+    teamcityDataDir = "$rootDir/data/"
+    teamcityJavaHome = System.properties['java.home']
+    okhttpVersion = '3.8.1'
+}
+
+teamcity {
+    version = teamcityVersion
+    server {
+        descriptor {
+            name = project.name
+            displayName = project.name
+            version = project.version
+            vendorName = 'redgate'
+            description = 'Http Headers authentication plugin'
+            downloadUrl = 'https://github.com/red-gate/teamcity-httpheader-auth/'
+            vendorUrl = 'https://github.com/red-gate/teamcity-httpheader-auth/'
+            email = 'buildmaster@red-gate.com'
+        }
+    }
+    environments {
+        teamcity {
+            version = teamcityVersion
+            homeDir = file(teamcityDir)
+            dataDir = file(teamcityDataDir)
+            javaHome = file(teamcityJavaHome)
+        }
+    }
+}
