@@ -69,7 +69,7 @@ public class AuthenticationScheme extends HttpAuthenticationSchemeAdapter {
         String username = request.getHeader("X-Forwarded-Login");
 
         if(username == null){
-            return sendUnauthorizedRequest(request, response, "Couldn't single sign on");
+            return HttpAuthenticationResult.notApplicable();
         }
 
         String name = request.getHeader("X-Forwarded-Name");
@@ -131,12 +131,5 @@ public class AuthenticationScheme extends HttpAuthenticationSchemeAdapter {
         groups.stream()
                 .filter(groupName -> !currentUserGroups.stream().filter(userGroup -> userGroup.getName().equals(groupName)).findAny().isPresent())
                 .forEach(groupName -> addUserToGroup(user, groupName));
-    }
-
-    private HttpAuthenticationResult sendUnauthorizedRequest(HttpServletRequest request, HttpServletResponse response, String reason) throws IOException {
-        LOG.warn(reason);
-        HttpAuthUtil.setUnauthenticatedReason(request, reason);
-        response.sendError(HttpStatus.UNAUTHORIZED.value(), reason);
-        return HttpAuthenticationResult.unauthenticated();
     }
 }
