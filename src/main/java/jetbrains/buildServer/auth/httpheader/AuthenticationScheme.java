@@ -74,10 +74,15 @@ public class AuthenticationScheme extends HttpAuthenticationSchemeAdapter {
 
         String name = request.getHeader("X-Forwarded-Name");
         String emailAddress = request.getHeader("X-Forwarded-Email");
-        List<String> groups = Arrays.asList(request.getHeader("X-Forwarded-Groups").split(","))
-                .stream()
-                .map(String::trim)
-                .collect(Collectors.toList());
+
+        List<String> groups = new ArrayList<String>();
+        String xForwardedGroups = request.getHeader("X-Forwarded-Groups");
+        if(xForwardedGroups != null){
+            groups = Arrays.asList(xForwardedGroups.split(","))
+                    .stream()
+                    .map(String::trim)
+                    .collect(Collectors.toList());
+        }
 
         final SUser user = findOrCreateUser(username);
 
