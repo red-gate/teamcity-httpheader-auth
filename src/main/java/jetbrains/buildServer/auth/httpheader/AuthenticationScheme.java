@@ -75,20 +75,10 @@ public class AuthenticationScheme extends HttpAuthenticationSchemeAdapter {
         String name = request.getHeader("X-Forwarded-Name");
         String emailAddress = request.getHeader("X-Forwarded-Email");
 
-        List<String> groups = new ArrayList<String>();
-        String xForwardedGroups = request.getHeader("X-Forwarded-Groups");
-        if(xForwardedGroups != null){
-            groups = Arrays.asList(xForwardedGroups.split(","))
-                    .stream()
-                    .map(String::trim)
-                    .collect(Collectors.toList());
-        }
-
         final SUser user = findOrCreateUser(username);
 
-        // Update the user with the name, email address and groups coming from http headers.
+        // Update the user with the name and email address coming from http headers.
         user.updateUserAccount(username, name, emailAddress);
-        updateUserGroups(user, groups);
 
         return HttpAuthenticationResult.authenticated(new ServerPrincipal(HTTPHEADER_AUTH_SCHEME_NAME, username), false);
     }
@@ -99,42 +89,5 @@ public class AuthenticationScheme extends HttpAuthenticationSchemeAdapter {
             result = userModel.createUserAccount(null, username);
         }
         return result;
-    }
-
-    private void addUserToGroup(@NotNull SUser user, @NotNull String groupName){
-        SUserGroup group = userGroupManager.findUserGroupByName(groupName);
-        if(group != null){
-            group.addUser(user);
-            LOG.info(String.format("Added user '%s' to group '%s'.", user.getUsername(), groupName));
-        } else {
-            // Don't attempt to create the group manually.
-            LOG.warn(String.format("Could not add user '%s' to group '%s'. You would need to manually create the group to remove this warning.", user.getUsername(), groupName));
-        }
-    }
-
-    private void removeUserFromGroup(@NotNull SUser user, @NotNull UserGroup userGroup){
-        ((SUserGroup)userGroup).removeUser(user);
-        LOG.info(String.format("Removed user '%s' from group '%s'.", user.getUsername(), userGroup.getName()));
-    }
-
-    private void updateUserGroups(@NotNull SUser user, @NotNull List<String> groups){
-        // Special "All Users" group which we do not want to touch.
-        UserGroup allUsersGroup = userGroupManager.getAllUsersGroup();
-
-        List<UserGroup> currentUserGroups = userGroupManager.getHostGroupsOf(user)
-                .stream()
-                .filter(userGroup -> !userGroup.equals(allUsersGroup))
-                .collect(Collectors.toList());
-
-        // Remove user from groups it shouldn't belong to.
-        currentUserGroups
-                .stream()
-                .filter(userGroup -> !groups.contains(userGroup.getName()))
-                .forEach(userGroup -> removeUserFromGroup(user, userGroup));
-
-        // Add user to groups it should belong to.
-        groups.stream()
-                .filter(groupName -> !currentUserGroups.stream().filter(userGroup -> userGroup.getName().equals(groupName)).findAny().isPresent())
-                .forEach(groupName -> addUserToGroup(user, groupName));
     }
 }
